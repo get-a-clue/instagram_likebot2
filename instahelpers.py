@@ -27,6 +27,8 @@ class InstaDriver:
             chrome_arguments.append("--headless")
             chrome_arguments.append("--disable-gpu")
             chrome_arguments.append("--window-size=1280,1280")
+            chrome_arguments.append("--no-sandbox")
+            chrome_arguments.append("--disable-dev-shm-usage")
         for a in chrome_arguments:
             chrome_options.add_argument(a)
         self.driver = webdriver.Chrome(options=chrome_options)
