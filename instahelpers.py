@@ -4,7 +4,7 @@ import logging
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
-NEWSFEED_STOP_CONTINUOUS_ALREADY_LIKED = 10
+NEWSFEED_STOP_CONTINUOUS_ALREADY_LIKED = 20
 XPATH_LOGIN_INPUT = "//input[@name='username']"
 XPATH_PASSWORD_INPUT = "//input[@name='password']"
 XPATH_LOGIN_BUTTON = "//button[@type='submit']"
@@ -19,10 +19,12 @@ class InstaDriver:
         self.login = login
         self.password = password
 
-        userdatadir = "c:\\tmp\\likebot_" + login
+        userdatadir = "likebot_" + login
         chrome_options = webdriver.ChromeOptions()
         chrome_arguments = ["--disable-extensions", "--no-default-browser-check",
                             "--disable-sync", "--user-data-dir=" + userdatadir, "--disk-cache-size=102400"]
+
+        chrome_arguments.append('--user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"')
         if is_headless:
             chrome_arguments.append("--headless")
             chrome_arguments.append("--disable-gpu")
@@ -34,7 +36,7 @@ class InstaDriver:
         self.driver = webdriver.Chrome(options=chrome_options)
 
     def do_sleep(self, tick):
-        time.sleep(tick)
+        time.sleep(tick * 2)
 
     def go_url(self, url):
         logging.info("Goto url: {0}".format(url))
@@ -42,7 +44,7 @@ class InstaDriver:
         self.do_sleep(1)
 
     def do_click_delay(self, element, tick):
-        element.click()
+        webdriver.ActionChains(self.driver).move_to_element(element).click(element).perform()
         self.do_sleep(tick)
 
     def do_click(self, element):
@@ -99,14 +101,16 @@ class InstaDriver:
 
     def like_newsfeed_article(self, article, article_url, author):
         try:
-            article.find_element_by_xpath('div[2]/section/span/..//span[@aria-label="Unlike"]')
+            unlike = article.find_element_by_xpath('div[2]/section/span/..//*[@aria-label="Unlike"]')
             return False
         except NoSuchElementException:
             pass
 
-        element = article.find_element_by_xpath('div[2]/section/span/..//span[@aria-label="Like"]')
-        self.do_click_delay(element, 3)
-        logging.info("+++ Liked newsfeed article: {0} by {1}".format(article_url, author))
+        elements = article.find_elements_by_xpath('div[2]/section/span/..//*[@aria-label="Like"]')
+        for ele in elements:
+            self.do_click_delay(ele, 3)
+            logging.info("+++ Liked newsfeed article: {0} by {1}".format(article_url, author))
+            break
         return True
 
     def do_like_newsfeed(self, likes_max):
@@ -156,4 +160,5 @@ class InstaDriver:
                 logging.info("Stopping because continuous already liked is exceeded")
                 break
 
+        logging.info("Breaking... Total likes made: {0}".format(likes_count))
         return likes_count
